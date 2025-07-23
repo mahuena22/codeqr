@@ -70,51 +70,69 @@ function generateTicketNumber() {
 }
 
 // Generate ticket with QR code
-function generateTicket() {
+async function generateTicket() {
     const ticketNumber = document.getElementById('ticket-number').value;
     const ticketType = document.getElementById('ticket-type').value;
-    const timestamp = new Date().toISOString();
     
-    // Create ticket data
-    const ticketData = {
-        id: ticketNumber,
-        type: ticketType,
-        generated: timestamp,
-        status: 'valid'
-    };
-    
-    // Generate QR code
-    const qr = qrcode(0, 'M');
-    qr.addData(JSON.stringify(ticketData));
-    qr.make();
-    
-    // Display QR code
-    const qrDisplay = document.getElementById('qr-display');
-    const qrCodeDiv = document.getElementById('qr-code');
-    const ticketInfo = document.getElementById('ticket-info');
-    
-    qrCodeDiv.innerHTML = qr.createImgTag(4, 10);
-    ticketInfo.innerHTML = `
-        <strong>Numéro:</strong> ${ticketNumber}<br>
-        <strong>Type:</strong> ${ticketType}<br>
-        <strong>Généré le:</strong> ${new Date(timestamp).toLocaleString('fr-FR')}
-    `;
-    
-    qrDisplay.style.display = 'block';
-    
-    // Store ticket
-    generatedTickets.push(ticketData);
-    saveToStorage();
-    
-    // Increment counter and generate new number
-    ticketCounter++;
-    generateTicketNumber();
-    
-    // Update dashboard
-    updateDashboard();
-    
-    // Show success message
-    showMessage('Ticket généré avec succès!', 'success');
+    try {
+        // Call API to generate ticket
+        const response = await fetch('/api/generate-ticket', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ticketNumber: ticketNumber,
+                type: ticketType
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Create ticket data for QR code
+            const ticketData = {
+                id: ticketNumber,
+                type: ticketType,
+                generated: result.ticket.generated_at,
+                status: 'valid'
+            };
+            
+            // Generate QR code
+            const qr = qrcode(0, 'M');
+            qr.addData(JSON.stringify(ticketData));
+            qr.make();
+            
+            // Display QR code
+            const qrDisplay = document.getElementById('qr-display');
+            const qrCodeDiv = document.getElementById('qr-code');
+            const ticketInfo = document.getElementById('ticket-info');
+            
+            qrCodeDiv.innerHTML = qr.createImgTag(4, 10);
+            ticketInfo.innerHTML = `
+                <strong>Numéro:</strong> ${ticketNumber}<br>
+                <strong>Type:</strong> ${ticketType}<br>
+                <strong>Généré le:</strong> ${new Date(result.ticket.generated_at).toLocaleString('fr-FR')}
+            `;
+            
+            qrDisplay.style.display = 'block';
+            
+            // Increment counter and generate new number
+            ticketCounter++;
+            generateTicketNumber();
+            
+            // Update dashboard
+            updateDashboard();
+            
+            // Show success message
+            showMessage(result.message, 'success');
+        } else {
+            showMessage(result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error generating ticket:', error);
+        showMessage('Erreur lors de la génération du ticket', 'error');
+    }
 }
 
 // Download QR code
@@ -240,24 +258,35 @@ function onScanError(errorMessage) {
 }
 
 // Process scanned ticket
-function processScannedTicket(ticketData) {
-    // Check if ticket was already scanned
-    const alreadyScanned = scannedTickets.find(t => t.id === ticketData.id);
-    
-    if (alreadyScanned) {
-        showMessage('Ce ticket a déjà été scanné!', 'warning');
-        showScannedInfo(ticketData, 'Déjà scanné');
-        return;
+async function processScannedTicket(ticketData) {
+    try {
+        // Call API to scan ticket
+        const response = await fetch('/api/scan-ticket', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ticketNumber: ticketData.id
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showScannedInfo(result.ticket, 'Valide');
+            showMessage(result.message, 'success');
+        } else {
+            showScannedInfo(ticketData, result.error.includes('déjà été scanné') ? 'Déjà scanné' : 'Invalide');
+            showMessage(result.error, 'warning');
+        }
+        
+        // Update dashboard
+        updateDashboard();
+    } catch (error) {
+        console.error('Error scanning ticket:', error);
+        showMessage('Erreur lors de la validation du ticket', 'error');
     }
-    
-    // Add scan timestamp
-    ticketData.scanned = new Date().toISOString();
-    scannedTickets.push(ticketData);
-    saveToStorage();
-    
-    showScannedInfo(ticketData, 'Valide');
-    updateDashboard();
-    showMessage('Ticket validé avec succès!', 'success');
 }
 
 // Show scanned ticket info
@@ -265,15 +294,18 @@ function showScannedInfo(ticketData, status) {
     const scanResult = document.getElementById('scan-result');
     const scannedInfo = document.getElementById('scanned-info');
     
+    const isValid = status === 'Valide';
+    const isScanned = status === 'Déjà scanné';
+    
     scannedInfo.innerHTML = `
-        <div style="background: ${status === 'Valide' ? '#d4edda' : '#fff3cd'}; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-            <strong>Statut:</strong> <span style="color: ${status === 'Valide' ? '#155724' : '#856404'}">${status}</span>
+        <div style="background: ${isValid ? '#d4edda' : isScanned ? '#fff3cd' : '#f8d7da'}; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <strong>Statut:</strong> <span style="color: ${isValid ? '#155724' : isScanned ? '#856404' : '#721c24'}">${status}</span>
         </div>
         <div style="background: #f8f9fa; padding: 15px; border-radius: 10px;">
-            <strong>ID:</strong> ${ticketData.id || 'N/A'}<br>
+            <strong>ID:</strong> ${ticketData.ticket_number || ticketData.id || 'N/A'}<br>
             <strong>Type:</strong> ${ticketData.type || 'N/A'}<br>
-            <strong>Généré:</strong> ${ticketData.generated ? new Date(ticketData.generated).toLocaleString('fr-FR') : 'N/A'}<br>
-            ${ticketData.scanned ? `<strong>Scanné:</strong> ${new Date(ticketData.scanned).toLocaleString('fr-FR')}` : ''}
+            <strong>Généré:</strong> ${ticketData.generated_at || ticketData.generated ? new Date(ticketData.generated_at || ticketData.generated).toLocaleString('fr-FR') : 'N/A'}<br>
+            ${ticketData.scanned_at ? `<strong>Scanné:</strong> ${new Date(ticketData.scanned_at).toLocaleString('fr-FR')}` : ''}
         </div>
     `;
     
@@ -288,30 +320,41 @@ function showScannedContent(content) {
 }
 
 // Update dashboard statistics
-function updateDashboard() {
-    document.getElementById('generated-count').textContent = generatedTickets.length;
-    document.getElementById('scanned-count').textContent = scannedTickets.length;
-    
-    const validatedTicketsList = document.getElementById('validated-tickets');
-    
-    if (scannedTickets.length === 0) {
-        validatedTicketsList.innerHTML = '<div class="empty-state">Aucun ticket validé</div>';
-    } else {
-        validatedTicketsList.innerHTML = scannedTickets
-            .sort((a, b) => new Date(b.scanned) - new Date(a.scanned))
-            .map(ticket => `
-                <div class="ticket-row">
-                    <div>${ticket.id}</div>
-                    <div>${ticket.type}</div>
-                    <div>${new Date(ticket.scanned).toLocaleString('fr-FR', { 
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</div>
-                </div>
-            `).join('');
+async function updateDashboard() {
+    try {
+        const response = await fetch('/api/dashboard');
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('generated-count').textContent = result.stats.totalGenerated;
+            document.getElementById('scanned-count').textContent = result.stats.totalScanned;
+            
+            const validatedTicketsList = document.getElementById('validated-tickets');
+            
+            if (result.validatedTickets.length === 0) {
+                validatedTicketsList.innerHTML = '<div class="empty-state">Aucun ticket validé</div>';
+            } else {
+                validatedTicketsList.innerHTML = result.validatedTickets
+                    .map(ticket => `
+                        <div class="ticket-row">
+                            <div>${ticket.id}</div>
+                            <div>${ticket.type}</div>
+                            <div>${new Date(ticket.scanned_at).toLocaleString('fr-FR', { 
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}</div>
+                        </div>
+                    `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error updating dashboard:', error);
+        // Keep the current localStorage fallback for display
+        document.getElementById('generated-count').textContent = generatedTickets.length;
+        document.getElementById('scanned-count').textContent = scannedTickets.length;
     }
 }
 

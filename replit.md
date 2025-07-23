@@ -21,8 +21,25 @@ Tickets Express is a mobile-first web application for generating and scanning ev
 - **Typography**: Montserrat font family via Google Fonts
 - **Color Scheme**: Dark blue night theme (#1a237e, #0d47a1)
 
-### Client-Side Storage
-- **Local Storage**: Browser localStorage for persisting ticket data
+### Backend Architecture
+- **Server**: Node.js HTTP server with REST API endpoints
+- **Database**: PostgreSQL with Drizzle ORM for type-safe queries
+- **API Endpoints**:
+  - `POST /api/generate-ticket`: Creates new tickets in database
+  - `POST /api/scan-ticket`: Validates and marks tickets as scanned
+  - `GET /api/dashboard`: Returns ticket statistics and scan history
+
+### Database Storage
+- **Technology**: PostgreSQL database with Drizzle ORM
+- **Tables**: 
+  - `tickets`: Stores generated tickets with QR data
+  - `scanned_tickets`: Logs all ticket scans for audit trail
+- **API Layer**: Node.js server with REST endpoints
+- **Data Persistence**: All ticket data persists in database across sessions
+- **Backup Storage**: Browser localStorage for offline fallback
+
+### Client-Side Fallback
+- **Local Storage**: Browser localStorage for offline persistence
 - **Data Structure**: Arrays for storing generated and scanned tickets
 - **Session Management**: Counter-based ticket numbering with persistence
 
@@ -55,21 +72,24 @@ Tickets Express is a mobile-first web application for generating and scanning ev
 1. **Ticket Generation**:
    - User selects ticket type
    - System auto-generates unique ticket number
+   - API call creates ticket in PostgreSQL database
    - QR code created with ticket data
-   - Ticket stored in localStorage
-   - Dashboard updated
+   - Ticket stored with metadata (type, timestamp, status)
+   - Dashboard updated with live database data
 
 2. **Ticket Scanning**:
    - Camera activated for QR code scanning
-   - Scanned data validated against generated tickets
-   - Ticket marked as used if valid
-   - Results displayed to user
-   - Dashboard updated
+   - Scanned data validated against database tickets
+   - API call marks ticket as scanned if valid
+   - Scan event logged in scanned_tickets table
+   - Results displayed to user with database status
+   - Dashboard updated with real-time statistics
 
 3. **Data Persistence**:
-   - All ticket data stored in browser localStorage
-   - Data persists across browser sessions
-   - Counter state maintained
+   - Primary storage in PostgreSQL database
+   - Real-time statistics from database queries
+   - Fallback localStorage for offline functionality
+   - Audit trail maintained for all scan events
 
 ## External Dependencies
 
@@ -80,6 +100,11 @@ Tickets Express is a mobile-first web application for generating and scanning ev
 ### CDN Dependencies
 - Libraries loaded via CDN (unpkg.com and jsdelivr.net)
 - No build process or package management required
+
+### Backend Dependencies
+- **@neondatabase/serverless**: PostgreSQL connection pooling
+- **drizzle-orm**: Type-safe database queries and schema management
+- **ws**: WebSocket support for database connections
 
 ## Deployment Strategy
 
