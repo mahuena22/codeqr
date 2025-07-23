@@ -13,8 +13,28 @@ class TicketAPI {
   // Generate a new ticket
   static async generateTicket(ticketNumber, type) {
     try {
+      // Check if ticket number already exists
+      let finalTicketNumber = ticketNumber;
+      let counter = 1;
+      
+      while (true) {
+        const existingTicket = await pool.query(
+          'SELECT id FROM tickets WHERE ticket_number = $1',
+          [finalTicketNumber]
+        );
+        
+        if (existingTicket.rows.length === 0) {
+          break; // Number is available
+        }
+        
+        // Generate next number
+        counter++;
+        const currentYear = new Date().getFullYear();
+        finalTicketNumber = `${type}-${currentYear}-${String(counter).padStart(3, '0')}`;
+      }
+
       const qrData = JSON.stringify({
-        id: ticketNumber,
+        id: finalTicketNumber,
         type: type,
         generated: new Date().toISOString(),
         status: 'valid'
@@ -22,7 +42,7 @@ class TicketAPI {
 
       const result = await pool.query(
         'INSERT INTO tickets (ticket_number, type, status, qr_data) VALUES ($1, $2, $3, $4) RETURNING *',
-        [ticketNumber, type, 'valid', qrData]
+        [finalTicketNumber, type, 'valid', qrData]
       );
 
       return {
@@ -134,6 +154,43 @@ class TicketAPI {
       return {
         success: false,
         error: 'Erreur lors de la récupération des statistiques'
+      };
+    }
+  }
+
+  // Get next available ticket number
+  static async getNextTicketNumber(type) {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      // Get the highest number for this type and year
+      const result = await pool.query(`
+        SELECT ticket_number 
+        FROM tickets 
+        WHERE ticket_number LIKE $1 
+        ORDER BY ticket_number DESC 
+        LIMIT 1
+      `, [`${type}-${currentYear}-%`]);
+      
+      let nextNumber = 1;
+      
+      if (result.rows.length > 0) {
+        const lastTicket = result.rows[0].ticket_number;
+        const numberPart = lastTicket.split('-')[2];
+        nextNumber = parseInt(numberPart) + 1;
+      }
+      
+      const ticketNumber = `${type}-${currentYear}-${String(nextNumber).padStart(3, '0')}`;
+      
+      return {
+        success: true,
+        ticketNumber
+      };
+    } catch (error) {
+      console.error('Error getting next ticket number:', error);
+      return {
+        success: false,
+        error: 'Erreur lors de la génération du numéro'
       };
     }
   }

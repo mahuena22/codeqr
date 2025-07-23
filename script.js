@@ -5,11 +5,11 @@ let generatedTickets = [];
 let scannedTickets = [];
 
 // Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     initializeApp();
     setupEventListeners();
     loadStoredData();
-    generateTicketNumber();
+    await generateTicketNumber();
     updateDashboard();
 });
 
@@ -37,6 +37,9 @@ function setupEventListeners() {
     
     // Restart scan button
     document.getElementById('restart-scan').addEventListener('click', startScanner);
+    
+    // Ticket type change
+    document.getElementById('ticket-type').addEventListener('change', generateTicketNumber);
 }
 
 // Switch between tabs
@@ -63,9 +66,33 @@ function switchTab(targetTab) {
 }
 
 // Generate unique ticket number
-function generateTicketNumber() {
+async function generateTicketNumber() {
     const currentYear = new Date().getFullYear();
-    const ticketNumber = `VIP-${currentYear}-${String(ticketCounter).padStart(3, '0')}`;
+    const ticketType = document.getElementById('ticket-type').value;
+    
+    try {
+        // Try to get next available number from database
+        const response = await fetch('/api/next-ticket-number', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ type: ticketType })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('ticket-number').value = result.ticketNumber;
+                return;
+            }
+        }
+    } catch (error) {
+        console.log('API not available, using fallback numbering');
+    }
+    
+    // Fallback to local counter
+    const ticketNumber = `${ticketType}-${currentYear}-${String(ticketCounter).padStart(3, '0')}`;
     document.getElementById('ticket-number').value = ticketNumber;
 }
 

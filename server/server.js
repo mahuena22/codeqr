@@ -69,6 +69,9 @@ async function handleAPI(req, res, pathname) {
         result = await TicketAPI.scanTicket(ticketNumber);
       } else if (pathname === '/api/dashboard' && method === 'GET') {
         result = await TicketAPI.getDashboardStats();
+      } else if (pathname === '/api/next-ticket-number' && method === 'POST') {
+        const { type } = JSON.parse(body);
+        result = await TicketAPI.getNextTicketNumber(type);
       } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'API endpoint not found' }));
