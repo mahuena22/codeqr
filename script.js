@@ -136,21 +136,61 @@ function startScanner() {
         stopScanner();
     }
     
+    // Show loading message
+    qrReaderElement.innerHTML = '<div class="camera-loading">Activation de la caméra...</div>';
+    
     html5QrcodeScanner = new Html5Qrcode("qr-reader");
     
     const config = {
         fps: 10,
-        qrbox: { width: 250, height: 250 }
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
     };
     
-    html5QrcodeScanner.start(
-        { facingMode: "environment" }, // Use back camera
-        config,
-        onScanSuccess,
-        onScanError
-    ).catch(err => {
+    // Try to get camera access
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+            // Use back camera if available, otherwise use first camera
+            const cameraId = devices.find(device => 
+                device.label.toLowerCase().includes('back') || 
+                device.label.toLowerCase().includes('rear')
+            )?.id || devices[0].id;
+            
+            return html5QrcodeScanner.start(
+                cameraId,
+                config,
+                onScanSuccess,
+                onScanError
+            );
+        } else {
+            throw new Error('Aucune caméra détectée');
+        }
+    }).catch(err => {
         console.error('Failed to start scanner:', err);
-        showMessage('Erreur: Impossible d\'accéder à la caméra', 'error');
+        let errorMessage = 'Erreur: Impossible d\'accéder à la caméra';
+        
+        if (err.name === 'NotAllowedError' || err.message.includes('Permission denied')) {
+            errorMessage = 'Permission refusée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.';
+        } else if (err.name === 'NotFoundError') {
+            errorMessage = 'Aucune caméra trouvée sur cet appareil.';
+        } else if (err.name === 'NotSupportedError') {
+            errorMessage = 'Scanner QR non supporté par ce navigateur.';
+        }
+        
+        qrReaderElement.innerHTML = `
+            <div class="camera-error">
+                <h4>⚠️ Problème de caméra</h4>
+                <p>${errorMessage}</p>
+                <div class="camera-instructions">
+                    <h5>Instructions :</h5>
+                    <ol>
+                        <li>Cliquez sur l'icône de caméra dans la barre d'adresse</li>
+                        <li>Sélectionnez "Toujours autoriser"</li>
+                        <li>Actualisez la page</li>
+                    </ol>
+                </div>
+            </div>
+        `;
         document.getElementById('restart-scan').style.display = 'block';
     });
 }

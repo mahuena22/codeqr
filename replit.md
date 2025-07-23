@@ -6,7 +6,10 @@ Tickets Express is a mobile-first web application for generating and scanning ev
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+- Preferred communication style: Simple, everyday language.
+- Font preference: Montserrat (imported via Google Fonts)
+- Color scheme: Dark blue night (#1a237e primary, #0d47a1 secondary)
+- Camera permissions: Must provide clear instructions for scanner functionality
 
 ## System Architecture
 
@@ -15,6 +18,8 @@ Preferred communication style: Simple, everyday language.
 - **Design Pattern**: Single Page Application (SPA) with tab-based navigation
 - **Mobile-First**: Responsive design optimized for mobile devices (max-width: 430px)
 - **Styling**: CSS Grid and Flexbox with gradient backgrounds and modern UI elements
+- **Typography**: Montserrat font family via Google Fonts
+- **Color Scheme**: Dark blue night theme (#1a237e, #0d47a1)
 
 ### Client-Side Storage
 - **Local Storage**: Browser localStorage for persisting ticket data
@@ -31,6 +36,9 @@ Preferred communication style: Simple, everyday language.
 
 ### 2. QR Code Scanner
 - **Library**: html5-qrcode for camera-based scanning
+- **Camera Access**: Enhanced permission handling with user instructions
+- **Error Handling**: Comprehensive error messages for camera access issues
+- **Camera Selection**: Automatically selects back camera when available
 - **Validation**: Checks against previously generated tickets
 - **Status Tracking**: Marks tickets as scanned to prevent duplicate usage
 
