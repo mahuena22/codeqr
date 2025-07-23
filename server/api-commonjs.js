@@ -1,5 +1,9 @@
 // CommonJS version of the API for Node.js server
-const { Pool } = require('@neondatabase/serverless');
+const { Pool, neonConfig } = require('@neondatabase/serverless');
+const ws = require('ws');
+
+// Configure WebSocket for Neon
+neonConfig.webSocketConstructor = ws;
 
 // Simple database connection for CommonJS
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });

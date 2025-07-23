@@ -131,7 +131,8 @@ async function generateTicket() {
         }
     } catch (error) {
         console.error('Error generating ticket:', error);
-        showMessage('Erreur lors de la génération du ticket', 'error');
+        // Fallback to localStorage if API fails
+        await generateTicketFallback();
     }
 }
 
@@ -285,7 +286,8 @@ async function processScannedTicket(ticketData) {
         updateDashboard();
     } catch (error) {
         console.error('Error scanning ticket:', error);
-        showMessage('Erreur lors de la validation du ticket', 'error');
+        // Fallback to localStorage if API fails
+        processScannedTicketFallback(ticketData);
     }
 }
 
@@ -352,9 +354,8 @@ async function updateDashboard() {
         }
     } catch (error) {
         console.error('Error updating dashboard:', error);
-        // Keep the current localStorage fallback for display
-        document.getElementById('generated-count').textContent = generatedTickets.length;
-        document.getElementById('scanned-count').textContent = scannedTickets.length;
+        // Fallback to localStorage for display
+        updateDashboardFallback();
     }
 }
 
@@ -411,3 +412,98 @@ document.addEventListener('visibilitychange', function() {
 window.addEventListener('beforeunload', function() {
     stopScanner();
 });
+
+// Fallback functions for when API is not available
+async function generateTicketFallback() {
+    const ticketNumber = document.getElementById('ticket-number').value;
+    const ticketType = document.getElementById('ticket-type').value;
+    const timestamp = new Date().toISOString();
+    
+    // Create ticket data
+    const ticketData = {
+        id: ticketNumber,
+        type: ticketType,
+        generated: timestamp,
+        status: 'valid'
+    };
+    
+    // Generate QR code
+    const qr = qrcode(0, 'M');
+    qr.addData(JSON.stringify(ticketData));
+    qr.make();
+    
+    // Display QR code
+    const qrDisplay = document.getElementById('qr-display');
+    const qrCodeDiv = document.getElementById('qr-code');
+    const ticketInfo = document.getElementById('ticket-info');
+    
+    qrCodeDiv.innerHTML = qr.createImgTag(4, 10);
+    ticketInfo.innerHTML = `
+        <strong>Numéro:</strong> ${ticketNumber}<br>
+        <strong>Type:</strong> ${ticketType}<br>
+        <strong>Généré le:</strong> ${new Date(timestamp).toLocaleString('fr-FR')}
+    `;
+    
+    qrDisplay.style.display = 'block';
+    
+    // Store ticket
+    generatedTickets.push(ticketData);
+    saveToStorage();
+    
+    // Increment counter and generate new number
+    ticketCounter++;
+    generateTicketNumber();
+    
+    // Update dashboard
+    updateDashboardFallback();
+    
+    // Show success message
+    showMessage('Ticket généré avec succès (mode hors ligne)', 'success');
+}
+
+function processScannedTicketFallback(ticketData) {
+    // Check if ticket was already scanned
+    const alreadyScanned = scannedTickets.find(t => t.id === ticketData.id);
+    
+    if (alreadyScanned) {
+        showMessage('Ce ticket a déjà été scanné!', 'warning');
+        showScannedInfo(ticketData, 'Déjà scanné');
+        return;
+    }
+    
+    // Add scan timestamp
+    ticketData.scanned = new Date().toISOString();
+    scannedTickets.push(ticketData);
+    saveToStorage();
+    
+    showScannedInfo(ticketData, 'Valide');
+    updateDashboardFallback();
+    showMessage('Ticket validé avec succès (mode hors ligne)', 'success');
+}
+
+function updateDashboardFallback() {
+    document.getElementById('generated-count').textContent = generatedTickets.length;
+    document.getElementById('scanned-count').textContent = scannedTickets.length;
+    
+    const validatedTicketsList = document.getElementById('validated-tickets');
+    
+    if (scannedTickets.length === 0) {
+        validatedTicketsList.innerHTML = '<div class="empty-state">Aucun ticket validé</div>';
+    } else {
+        validatedTicketsList.innerHTML = scannedTickets
+            .sort((a, b) => new Date(b.scanned) - new Date(a.scanned))
+            .map(ticket => `
+                <div class="ticket-row">
+                    <div>${ticket.id}</div>
+                    <div>${ticket.type}</div>
+                    <div>${new Date(ticket.scanned).toLocaleString('fr-FR', { 
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</div>
+                </div>
+            `).join('');
+    }
+}
