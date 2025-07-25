@@ -1,114 +1,150 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tickets Express</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>Tickets Express</h1>
-        </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tickets Express</title>
+        <link rel="stylesheet" href="style.css" />
+        <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <h1>
+                    SCALA BEACH PARTY <br />
+                    <span>Edition Spéciale à la plage</span>
+                </h1>
+            </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="nav-tabs">
-            <button class="tab-btn active" data-tab="generate">Générer</button>
-            <button class="tab-btn" data-tab="scanner">Scanner</button>
-            <button class="tab-btn" data-tab="dashboard">Tableau de bord</button>
-        </nav>
+            <!-- Navigation Tabs -->
+            <nav class="nav-tabs">
+                <button class="tab-btn active" data-tab="generate">
+                    Générer
+                </button>
+                <button class="tab-btn" data-tab="scanner">Scanner</button>
+                <button class="tab-btn" data-tab="dashboard">
+                    Tableau de bord
+                </button>
+            </nav>
 
-        <!-- Tab Contents -->
-        <main class="tab-content">
-            <!-- Generate Tab -->
-            <div id="generate" class="tab-pane active">
-                <div class="section-header">
-                    <h2>Générer un ticket</h2>
-                </div>
-                
-                <div class="form-group">
-                    <label for="ticket-number">Numéro du ticket</label>
-                    <input type="text" id="ticket-number" class="form-input" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="ticket-type">Type de ticket</label>
-                    <select id="ticket-type" class="form-select">
-                        <option value="VIP">VIP</option>
-                        <option value="Standard">Standard</option>
-                        <option value="Premium">Premium</option>
-                        <option value="Basic">Basic</option>
-                    </select>
-                </div>
-                
-                <button id="generate-btn" class="btn btn-primary">Générer le ticket</button>
-                
-                <div id="qr-display" class="qr-display" style="display: none;">
-                    <h3>Ticket généré</h3>
-                    <div id="qr-code"></div>
-                    <p id="ticket-info"></p>
-                    <button id="download-btn" class="btn btn-secondary">Télécharger</button>
-                </div>
-            </div>
-
-            <!-- Scanner Tab -->
-            <div id="scanner" class="tab-pane">
-                <div class="section-header">
-                    <h2>Scanner un ticket</h2>
-                </div>
-                
-                <div class="camera-notice">
-                    <p>📷 <strong>Autorisation requise :</strong> Veuillez autoriser l'accès à la caméra pour scanner les codes QR</p>
-                </div>
-                
-                <div id="scanner-container">
-                    <div id="qr-reader"></div>
-                    <button id="restart-scan" class="btn btn-primary" style="display: none;">Relancer le scan</button>
-                </div>
-                
-                <div id="scan-result" class="scan-result" style="display: none;">
-                    <h3>Ticket scanné</h3>
-                    <div id="scanned-info"></div>
-                </div>
-            </div>
-
-            <!-- Dashboard Tab -->
-            <div id="dashboard" class="tab-pane">
-                <div class="section-header">
-                    <h2>Tableau de bord</h2>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="generated-count">0</div>
-                        <div class="stat-label">Tickets générés</div>
+            <!-- Tab Contents -->
+            <main class="tab-content">
+                <!-- Generate Tab -->
+                <div id="generate" class="tab-pane active">
+                    <div class="section-header">
+                        <h2>Générer un ticket</h2>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-number" id="scanned-count">0</div>
-                        <div class="stat-label">Tickets scannés</div>
+
+                    <div class="form-group">
+                        <label for="ticket-number">Numéro du ticket</label>
+                        <input
+                            type="text"
+                            id="ticket-number"
+                            class="form-input"
+                            readonly />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ticket-type">Type de ticket</label>
+                        <select id="ticket-type" class="form-select">
+                            <option value="VIP">VIP</option>
+                            <option value="Standard">Standard</option>
+                            <option value="Premium">Premium</option>
+                            <option value="Basic">Basic</option>
+                        </select>
+                    </div>
+
+                    <button id="generate-btn" class="btn btn-primary">
+                        Générer le ticket
+                    </button>
+
+                    <div
+                        id="qr-display"
+                        class="qr-display"
+                        style="display: none">
+                        <h3>Ticket généré</h3>
+                        <div id="qr-code"></div>
+                        <p id="ticket-info"></p>
+                        <button id="download-btn" class="btn btn-secondary">
+                            Télécharger
+                        </button>
                     </div>
                 </div>
-                
-                <div class="tickets-section">
-                    <h3>Tickets validés</h3>
-                    <div class="table-header">
-                        <div>ID</div>
-                        <div>Type</div>
-                        <div>Date/Heure</div>
+
+                <!-- Scanner Tab -->
+                <div id="scanner" class="tab-pane">
+                    <div class="section-header">
+                        <h2>Scanner un ticket</h2>
                     </div>
-                    <div id="validated-tickets" class="tickets-list">
-                        <!-- Validated tickets will be listed here -->
+
+                    <div class="camera-notice">
+                        <p>
+                            📷 <strong>Autorisation requise :</strong> Veuillez
+                            autoriser l'accès à la caméra pour scanner les codes
+                            QR
+                        </p>
+                    </div>
+
+                    <div id="scanner-container">
+                        <div id="qr-reader"></div>
+                        <button
+                            id="restart-scan"
+                            class="btn btn-primary"
+                            style="display: none">
+                            Relancer le scan
+                        </button>
+                    </div>
+
+                    <div
+                        id="scan-result"
+                        class="scan-result"
+                        style="display: none">
+                        <h3>Ticket scanné</h3>
+                        <div id="scanned-info"></div>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
 
-    <script src="script.js"></script>
-</body>
+                <!-- Dashboard Tab -->
+                <div id="dashboard" class="tab-pane">
+                    <div class="section-header">
+                        <h2>Tableau de bord</h2>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="generated-count">
+                                0
+                            </div>
+                            <div class="stat-label">Tickets générés</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-number" id="scanned-count">0</div>
+                            <div class="stat-label">Tickets scannés</div>
+                        </div>
+                    </div>
+
+                    <div class="tickets-section">
+                        <h3>Tickets validés</h3>
+                        <div class="table-header">
+                            <div>ID</div>
+                            <div>Type</div>
+                            <div>Date/Heure</div>
+                        </div>
+                        <div id="validated-tickets" class="tickets-list">
+                            <!-- Validated tickets will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer class="site-footer">
+            <p>Lieu : Eldorado, Cotonou - Bénin | Tel : 0152916619</p>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
 </html>
